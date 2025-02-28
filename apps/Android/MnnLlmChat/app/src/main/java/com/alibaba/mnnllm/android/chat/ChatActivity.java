@@ -144,8 +144,10 @@ public class ChatActivity extends AppCompatActivity {
             chatSession = chatService.createSession(modelId, configFilePath, true, chatSessionId, chatDataItemList);
         }
         chatSessionId = chatSession.getSessionId();
-        chatSession.setKeepHistory(!ModelUtils.isVisualModel(modelName) && !ModelUtils.isAudioModel(modelName));
-        Log.d(TAG, "current SessionId: " + chatSessionId);
+        boolean keepHistory = !ModelUtils.isVisualModel(modelName) && !ModelUtils.isAudioModel(modelName);
+        keepHistory = false; // 测试, 不保存历史
+        chatSession.setKeepHistory(keepHistory);
+        Log.d(TAG, "current SessionId: " + chatSessionId + ", KeepHistory: " + keepHistory);
         chatExecutor.submit(() -> {
             Log.d(TAG, "chatSession loading");
             setIsLoading(true);
