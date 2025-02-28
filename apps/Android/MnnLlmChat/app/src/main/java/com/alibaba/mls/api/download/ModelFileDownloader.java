@@ -133,11 +133,32 @@ public class ModelFileDownloader {
         }
         Log.d(TAG, "resume size: " + fileDownloadTask.downloadedSize + " expectedSize: " + expectedSize);
         Request request = requestBuilder.build();
-        try (Response response = client.newCall(request).execute()) {
-            Log.d(TAG, "downloadChunk response: success: " + response.isSuccessful() + " code: " + response.code());
-            if (response.isSuccessful() || response.code() == 416) {
-                try (InputStream is = response.body().byteStream();
-                     RandomAccessFile raf = new RandomAccessFile(tempFile, "rw")) {
+        Response finalResponse = null;
+        try {
+            Response response = client.newCall(request).execute();
+            // 处理302重定向
+            if (response.code() == 302) {
+                String redirectUrl = response.header("Location");
+                if (redirectUrl != null) {
+                    Log.d(TAG, "Following redirect to: " + redirectUrl);
+                    // 使用重定向URL重新下载
+                    Request redirectRequest = new Request.Builder()
+                            .url(redirectUrl)
+                            .get()
+                            .header("Accept-Encoding", "identity")
+                            .build();
+                    response.close();
+                    finalResponse = client.newCall(redirectRequest).execute();
+                }
+            } else {
+                finalResponse = response;
+            }
+
+            Log.d(TAG, "downloadChunk response: success: " + finalResponse.isSuccessful() + " code: " + finalResponse.code() + " msg: " + finalResponse.message());
+            
+            if (finalResponse.isSuccessful() || finalResponse.code() == 416 || finalResponse.code() == 302) {
+                try (InputStream is = finalResponse.body().byteStream();
+                    RandomAccessFile raf = new RandomAccessFile(tempFile, "rw")) {
                     raf.seek(fileDownloadTask.downloadedSize);
                     byte[] buffer = new byte[8192];
                     int bytesRead;
