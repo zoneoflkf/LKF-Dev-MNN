@@ -19,6 +19,8 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -51,7 +53,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private ChatRecyclerViewAdapter adapter;
-    private EditText editUserMessage;
+    private AutoCompleteTextView editUserMessage;
     private ImageView buttonSend;
 
     private ImageView imageMore;
@@ -195,6 +197,39 @@ public class ChatActivity extends AppCompatActivity {
     }
     private void setupEditText() {
         editUserMessage = findViewById(R.id.et_message);
+        
+        // 设置预设的联想词
+        String[] suggestions = new String[] {
+            "我要去九寨沟自驾，帮我生成一个适合的主题",
+            "我要去充电，帮我生成一个适合在车内等候的桌面布局",
+            "帮我换一个和理想差不多的桌面",
+            "这个桌面不太适合日常使用，帮我换一个",
+            "后面使用暗门演示主动主题生成",
+            "帮我换一个语音展示的桌面"
+        };
+        
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            suggestions
+        );
+        
+        editUserMessage.setAdapter(adapter);
+        editUserMessage.setThreshold(1); // 输入1个字符就开始显示提示
+        
+        // 添加焦点变化监听
+        editUserMessage.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // 当获得焦点时，显示下拉列表
+                editUserMessage.showDropDown();
+            }
+        });
+        
+        // 添加点击监听，点击时也显示下拉列表
+        editUserMessage.setOnClickListener(v -> {
+            editUserMessage.showDropDown();
+        });
+        
         editUserMessage.setOnEditorActionListener((v, actionId, event) -> {
             if ((event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
                 Log.d(TAG, "onEditorAction" + actionId + "  getAction: " + event.getAction() + "code: " + event.getKeyCode());
@@ -203,6 +238,7 @@ public class ChatActivity extends AppCompatActivity {
             }
             return false;
         });
+        
         editUserMessage.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -210,7 +246,6 @@ public class ChatActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-
             }
 
             @Override
