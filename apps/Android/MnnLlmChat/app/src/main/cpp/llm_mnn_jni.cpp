@@ -219,6 +219,8 @@ JNIEXPORT jlong JNICALL Java_com_alibaba_mnnllm_android_ChatSession_initNative(J
 JNIEXPORT jobject JNICALL Java_com_alibaba_mnnllm_android_ChatSession_submitNative(JNIEnv* env, jobject thiz,
                                                                                    jlong llmPtr, jstring inputStr,jboolean keepHistory,
                                                                                    jobject progressListener) {
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
     Llm* llm = reinterpret_cast<Llm*>(llmPtr);
     if (!llm) {
         return env->NewStringUTF("Failed, Chat is not ready!");
@@ -230,6 +232,7 @@ JNIEXPORT jobject JNICALL Java_com_alibaba_mnnllm_android_ChatSession_submitNati
         history.resize(1);
     }
     const char* input_str = env->GetStringUTFChars(inputStr, nullptr);
+    MNN_DEBUG("submitNative input: %s", input_str);
     std::stringstream response_buffer;
     jclass progressListenerClass = env->GetObjectClass(progressListener);
     jmethodID onProgressMethod = env->GetMethodID(progressListenerClass, "onProgress", "(Ljava/lang/String;)Z");
@@ -300,6 +303,11 @@ JNIEXPORT jobject JNICALL Java_com_alibaba_mnnllm_android_ChatSession_submitNati
     env->CallObjectMethod(hashMap, putMethod, env->NewStringUTF("audio_time"), env->NewObject(env->FindClass("java/lang/Long"), env->GetMethodID(env->FindClass("java/lang/Long"), "<init>", "(J)V"), audio_time));
     env->CallObjectMethod(hashMap, putMethod, env->NewStringUTF("prefill_time"), env->NewObject(env->FindClass("java/lang/Long"), env->GetMethodID(env->FindClass("java/lang/Long"), "<init>", "(J)V"), prefill_time));
     env->CallObjectMethod(hashMap, putMethod, env->NewStringUTF("decode_time"), env->NewObject(env->FindClass("java/lang/Long"), env->GetMethodID(env->FindClass("java/lang/Long"), "<init>", "(J)V"), decode_time));
+    
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count();
+    MNN_DEBUG("submitNative total inference time: %.3f seconds", duration);
+    
     return hashMap;
 }
 
