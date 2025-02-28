@@ -217,6 +217,13 @@ public class ChatActivity extends AppCompatActivity {
         editUserMessage.setAdapter(adapter);
         editUserMessage.setThreshold(1); // 输入1个字符就开始显示提示
         
+        // 添加联想词选中监听
+        editUserMessage.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedSuggestion = (String) parent.getItemAtPosition(position);
+            editUserMessage.setText(selectedSuggestion);
+            sendUserMessage();
+        });
+        
         // 添加焦点变化监听
         editUserMessage.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
