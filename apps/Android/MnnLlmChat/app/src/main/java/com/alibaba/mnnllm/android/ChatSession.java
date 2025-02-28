@@ -63,7 +63,7 @@ public class ChatSession implements Serializable {
             rootCacheDir = FileUtils.getMmapDir(modelId, configPath.contains("modelscope"));
             new File(rootCacheDir).mkdirs();
         }
-        nativePtr = initNative(rootCacheDir, modelId, configPath, useTmpPath, historyStringList, isDiffusion, ModelUtils.isR1Model(modelId));
+        nativePtr = initNative(rootCacheDir, modelId, configPath, useTmpPath, historyStringList, isDiffusion, ModelUtils.isR1Model(modelId), ApplicationUtils.get().getAssets());
         modelLoading = false;
         if (mReleaseRequeted) {
             release();
@@ -153,7 +153,7 @@ public class ChatSession implements Serializable {
         release();
     }
 
-    public native long initNative(String rootCacheDir,String modelId, String configPath, boolean useTmpPath, List<String> history, boolean isDiffusion, boolean isR1);
+    public native long initNative(String rootCacheDir, String modelId, String configPath, boolean useTmpPath, List<String> history, boolean isDiffusion, boolean isR1, android.content.res.AssetManager assetManager);
     private native HashMap<String, Object> submitNative(long instanceId, String input, boolean keepHistory, GenerateProgressListener listener);
 
     private native HashMap<String, Object> submitDiffusionNative(long instanceId, String input, String outputPath, GenerateProgressListener progressListener);

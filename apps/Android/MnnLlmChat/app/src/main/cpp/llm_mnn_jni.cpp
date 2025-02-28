@@ -21,6 +21,30 @@
 #include "mls_log.h"
 #include "MNN/expr/ExecutorScope.hpp"
 
+// 添加读取 assets 文件的辅助函数
+std::string readAssetFile(JNIEnv* env, jobject assetManager, const char* filename) {
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (mgr == nullptr) {
+        return "You are a helpful assistant.";  // 默认返回值,以防读取失败
+    }
+
+    AAsset* asset = AAssetManager_open(mgr, filename, AASSET_MODE_BUFFER);
+    if (asset == nullptr) {
+        return "You are a helpful assistant.";  // 默认返回值,以防文件不存在
+    }
+
+    off_t length = AAsset_getLength(asset);
+    char* buffer = new char[length + 1];
+    int bytesRead = AAsset_read(asset, buffer, length);
+    buffer[bytesRead] = '\0';
+    
+    std::string content(buffer);
+    delete[] buffer;
+    AAsset_close(asset);
+    
+    return content;
+}
+
 using MNN::Transformer::Llm;
 using mls::DiffusionSession;
 
@@ -126,7 +150,8 @@ JNIEXPORT jlong JNICALL Java_com_alibaba_mnnllm_android_ChatSession_initNative(J
                                                                                     jboolean use_tmp_path,
                                                                                     jobject chat_history,
                                                                                     jboolean is_diffusion,
-                                                                                    jboolean r1) {
+                                                                                    jboolean r1,
+                                                                                    jobject assetManager) {
     is_r1 = r1;
     const char* root_cache_dir = env->GetStringUTFChars(rootCacheDir, 0);
     const char* model_id = env->GetStringUTFChars(modelId, 0);
@@ -161,7 +186,9 @@ JNIEXPORT jlong JNICALL Java_com_alibaba_mnnllm_android_ChatSession_initNative(J
     MNN_DEBUG("dumped config: %s", llm->dump_config().c_str());
 
     history.clear();
-    history.emplace_back("system", is_r1 ? "<|begin_of_sentence|>You are a helpful assistant." : "You are a helpful assistant.");
+    // 从 assets/test_prompt.md 读取 system prompt
+    std::string system_prompt = readAssetFile(env, assetManager, "test_prompt.md");
+    history.emplace_back("system", is_r1 ? "<|begin_of_sentence|>" + system_prompt : system_prompt);
     if (chat_history != nullptr) {
         jclass listClass = env->GetObjectClass(chat_history);
         jmethodID sizeMethod = env->GetMethodID(listClass, "size", "()I");
