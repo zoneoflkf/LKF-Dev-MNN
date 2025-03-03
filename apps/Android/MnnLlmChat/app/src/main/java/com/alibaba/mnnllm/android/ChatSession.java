@@ -63,7 +63,7 @@ public class ChatSession implements Serializable {
             rootCacheDir = FileUtils.getMmapDir(modelId, configPath.contains("modelscope"));
             new File(rootCacheDir).mkdirs();
         }
-        nativePtr = initNative(rootCacheDir, modelId, configPath, useTmpPath, historyStringList, isDiffusion, ModelUtils.isR1Model(modelId), ApplicationUtils.get().getAssets());
+        nativePtr = initNative(rootCacheDir, modelId, configPath, useTmpPath, historyStringList, isDiffusion, ModelUtils.isR1Model(modelId), ApplicationProvider.get().getAssets());
         modelLoading = false;
         if (mReleaseRequeted) {
             release();
