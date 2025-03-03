@@ -61,6 +61,12 @@ public class ModelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         this.modelItemStatesMap = modelItemStatesMap;
         this.items.clear();
         this.items.addAll(hfRepoItems);
+        // Sort items by model name
+        this.items.sort((item1, item2) -> {
+            String name1 = item1.getModelName();
+            String name2 = item2.getModelName();
+            return name1.compareToIgnoreCase(name2);
+        });
         filter(filterQuery, filterDownloaded);
     }
 
