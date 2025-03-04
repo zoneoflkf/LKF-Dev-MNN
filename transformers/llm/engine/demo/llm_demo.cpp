@@ -13,6 +13,10 @@
 #include <sstream>
 #include <stdlib.h>
 #include <initializer_list>
+// 添加预处理指令，禁用 cpp-httplib 的异常处理
+#define CPPHTTPLIB_NO_EXCEPTIONS
+#include "cpp-httplib/httplib.h"
+
 using namespace MNN::Transformer;
 
 static void tuning_prepare(Llm* llm) {
@@ -195,34 +199,32 @@ std::string readSystemPrompt() {
     return buffer.str();
 }
 
-void chat(Llm* llm) {
-    ChatMessages messages;
-    messages.emplace_back("system", readSystemPrompt());
-    auto context = llm->getContext();
-    while (true) {
-        std::cout << "\nUser: ";
-        std::string user_str;
-        std::getline(std::cin, user_str);
-        if (user_str == "/exit") {
-            return;
-        }
-        if (user_str == "/reset") {
-            llm->reset();
-            std::cout << "\nA: reset done." << std::endl;
-            continue;
-        }
-        messages.emplace_back("user", user_str);
-        std::cout << "\nA: " << std::flush;
+void start_http_server(Llm* llm) {
+    httplib::Server svr;
+
+    svr.Post("/chat", [llm](const httplib::Request& req, httplib::Response& res) {
+        auto user_input = req.body;
+        ChatMessages messages;
+        messages.emplace_back("system", readSystemPrompt());
+        messages.emplace_back("user", user_input);
+
         llm->response(messages);
+        auto context = llm->getContext();
         auto assistant_str = context->generate_str;
-        messages.emplace_back("assistant", assistant_str);
-    }
+
+        res.set_content(assistant_str, "text/plain");
+    });
+
+    std::cout << "HTTP server started at http://localhost:8080" << std::endl;
+    svr.listen("0.0.0.0", 8080);
 }
+
 int main(int argc, const char* argv[]) {
     if (argc < 2) {
-        std::cout << "Usage: " << argv[0] << " config.json <prompt.txt>" << std::endl;
+        std::cout << "Usage: " << argv[0] << " config.json" << std::endl;
         return 0;
     }
+
     MNN::BackendConfig backendConfig;
     auto executor = MNN::Express::Executor::newExecutor(MNN_FORWARD_CPU, backendConfig, 1);
     MNN::Express::ExecutorScope s(executor);
@@ -235,19 +237,9 @@ int main(int argc, const char* argv[]) {
         AUTOTIME;
         llm->load();
     }
-    if (true) {
-        AUTOTIME;
-        tuning_prepare(llm.get());
-    }
-    if (argc < 3) {
-        chat(llm.get());
-        return 0;
-    }
-    int max_token_number = -1;
-    if (argc >= 4) {
-        std::istringstream os(argv[3]);
-        os >> max_token_number;
-    }
-    std::string prompt_file = argv[2];
-    return eval(llm.get(), prompt_file, max_token_number);
+    tuning_prepare(llm.get());
+
+    start_http_server(llm.get());
+
+    return 0;
 }
