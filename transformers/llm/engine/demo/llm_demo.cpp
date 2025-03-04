@@ -182,9 +182,22 @@ static int eval(Llm* llm, std::string prompt_file, int max_token_number) {
     return benchmark(llm, prompts, max_token_number);
 }
 
+std::string readSystemPrompt() {
+    std::string home = getenv("HOME");
+    std::string prompt_path = home + "/MNN_models/prompt_hmi_arbitrary.txt";
+    std::ifstream file(prompt_path);
+    if (!file.is_open()) {
+        std::cerr << "无法打开system prompt文件: " << prompt_path << std::endl;
+        return "You are a helpful assistant.";
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
 void chat(Llm* llm) {
     ChatMessages messages;
-    messages.emplace_back("system", "You are a helpful assistant.");
+    messages.emplace_back("system", readSystemPrompt());
     auto context = llm->getContext();
     while (true) {
         std::cout << "\nUser: ";
