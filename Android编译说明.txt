@@ -3,7 +3,7 @@
 2.转换为 MNN：调用 MNNConvert -f ONNX 而非 -f TORCH。
 3.校验与优化：使用 MNN 提供的 Python 脚本 testMNNFromOnnx.py 或在部署端测试推理结果。
 
-## 模型转换
+## 模型转换 (注意v5和v8的区别, 如果报错可以单独去 Github 上拉取对应版本的仓库)
 yolo export \
   model=yolov5su.pt \
   format=onnx \
@@ -14,6 +14,7 @@ yolo export \
   
 mnnconvert -f ONNX --modelFile yolov5su.onnx --MNNModel yolov5su.mnn --bizCode MNN
 mnnconvert -f TFLITE --modelFile best-fp16_v32.tflite --MNNModel best-fp16_v32.mnn --bizCode MNN
+mnnconvert -f TORCH --modelFile best.pt --MNNModel best.mnn --bizCode MNN
 
 ## 想了解MNN模型的具体结构，输入输出信息时，可以将模型转换为Json文件，并查找相关信息获取。
 mnnconvert -f MNN --modelFile yolov5su.mnn --JsonFile yolov5su.json

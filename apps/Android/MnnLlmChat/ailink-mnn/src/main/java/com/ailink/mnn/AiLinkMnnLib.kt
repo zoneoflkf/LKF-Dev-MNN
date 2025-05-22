@@ -16,6 +16,10 @@ object AiLinkMnnLib {
     @JvmStatic
     external fun initSession(modelPath: String, backends: Int, numThread: Int = 4): Boolean
 
+    /**
+     * 运行推理
+     * @return 参看 [LlmErrCode]
+     */
     @JvmStatic
     external fun runSession(inputBuff: FloatArray, outputBuff: FloatArray): Int
 

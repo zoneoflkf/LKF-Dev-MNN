@@ -120,6 +120,10 @@ Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring 
     config.type = (MNNForwardType) backends;
     config.numThread = numThread;
     s_Session = s_Interpreter->createSession(config);
+
+    __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "initSession: path=%s, backends=%d, numThread=%d",
+                        modelPathCStr, backends, numThread);
+
     return s_Session != nullptr ? JNI_TRUE : JNI_FALSE;
 }
 extern "C"
@@ -136,18 +140,18 @@ Java_com_ailink_mnn_AiLinkMnnLib_runSession(JNIEnv *env, jclass clazz, jfloatArr
     // 复制到输入张量
     input->copyFromHostTensor(&inputTensor);
 
-    // TODO 测试 打印输入尺寸
-    auto inputSize = inputTensor.size();
+    // 测试 打印输入尺寸
+    /*auto inputSize = inputTensor.size();
     auto inputShape = inputTensor.shape();
     std::string inputShapeStr;
     vec_to_cstr_ref(inputShape, inputShapeStr);
     __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "runSession: inShape=%s, inSize=%d",
-                        inputShapeStr.c_str(), inputSize);
+                        inputShapeStr.c_str(), inputSize);*/
 
     // 执行推理
     MNN::ErrorCode rlt = s_Interpreter->runSession(s_Session);
-    __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "runSession: rlt=%d", rlt);
     if (rlt != MNN::ErrorCode::NO_ERROR) {
+        __android_log_print(ANDROID_LOG_ERROR, "AiLink", "runSession: Failed > rlt=%d", rlt);
         return (int) rlt;
     }
 
@@ -157,16 +161,16 @@ Java_com_ailink_mnn_AiLinkMnnLib_runSession(JNIEnv *env, jclass clazz, jfloatArr
     output->copyToHostTensor(&outputTensor);
 
     // 拷贝输出结果
-    auto outputSize = outputTensor.size();
     auto outputPtr = outputTensor.host<float>();
     env->SetFloatArrayRegion(output_buff, 0, env->GetArrayLength(output_buff), outputPtr);
 
-    // TODO 打印输出结果
+    // 打印输出结果
+    /*auto outputSize = outputTensor.size();
     auto outputShape = outputTensor.shape();
     std::string shapeStr;
     vec_to_cstr_ref(outputShape, shapeStr);
     __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "runSession: outShape=%s, outSize=%d",
-                        shapeStr.c_str(), outputSize);
+                        shapeStr.c_str(), outputSize);*/
 
     return MNN::ErrorCode::NO_ERROR;
 }
