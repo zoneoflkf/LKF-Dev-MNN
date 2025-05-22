@@ -1,6 +1,6 @@
 package com.ailink.mnn
 
-object LlmBackends {
+object LlmForwardType {
     const val MNN_FORWARD_CPU = 0
 
     /**

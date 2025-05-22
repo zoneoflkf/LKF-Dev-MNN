@@ -10,11 +10,11 @@ object AiLinkMnnLib {
     /**
      * 初始化 LLM 会话
      * @param modelPath 模型路径
-     * @param backends 推理后端, 参看 [LlmBackends]
+     * @param forwardType 首选推理加速类型, 参看 [LlmForwardType]
      * @param numThread CPU推理并发数
      */
     @JvmStatic
-    external fun initSession(modelPath: String, backends: Int, numThread: Int = 4): Boolean
+    external fun initSession(modelPath: String, forwardType: Int, numThread: Int = 4): Boolean
 
     /**
      * 运行推理

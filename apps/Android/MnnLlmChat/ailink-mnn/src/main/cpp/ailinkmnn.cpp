@@ -108,7 +108,7 @@ void releaseSession() {
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring modelPath, jint backends, jint numThread) {
+Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring modelPath, jint forwardType, jint numThread) {
     const char *modelPathCStr = env->GetStringUTFChars(modelPath, JNI_FALSE);
 
     // 加载模型文件（路径为Android设备上的绝对路径）
@@ -117,12 +117,13 @@ Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring 
 
     // 配置会话
     MNN::ScheduleConfig config;
-    config.type = (MNNForwardType) backends;
+    config.type = (MNNForwardType) forwardType;
+    config.backupType = MNN_FORWARD_CPU; // 主后端不支持时，降级到 CPU
     config.numThread = numThread;
     s_Session = s_Interpreter->createSession(config);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "initSession: path=%s, backends=%d, numThread=%d",
-                        modelPathCStr, backends, numThread);
+    __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "initSession: path=%s, forwardType=%d, numThread=%d",
+                        modelPathCStr, forwardType, numThread);
 
     return s_Session != nullptr ? JNI_TRUE : JNI_FALSE;
 }
@@ -131,7 +132,6 @@ JNIEXPORT jint JNICALL
 Java_com_ailink_mnn_AiLinkMnnLib_runSession(JNIEnv *env, jclass clazz, jfloatArray input_buff, jfloatArray output_buff) {
     auto input = s_Interpreter->getSessionInput(s_Session, nullptr);
     MNN::Tensor inputTensor(input, input->getDimensionType());
-
     auto inputPtr = inputTensor.host<float>();
     // 拷贝图像输入
     auto inputBuff = env->GetFloatArrayElements(input_buff, JNI_FALSE);
