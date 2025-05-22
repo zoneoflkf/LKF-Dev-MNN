@@ -1,6 +1,8 @@
 package com.ailink.mnn
 
 object LlmBackends {
+    const val MNN_FORWARD_CPU = 0
+
     /**
      * Firstly find the first available backends not equal to CPU
      * If no other backends, use cpu
