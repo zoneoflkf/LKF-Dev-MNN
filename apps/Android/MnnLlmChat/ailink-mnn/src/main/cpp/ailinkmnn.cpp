@@ -95,16 +95,20 @@ inline const char *vec_to_cstr_ref(const std::vector<int> &v, std::string &out_s
 }*/
 
 void releaseSession() {
-    s_Interpreter->releaseSession(s_Session);
-    s_Session = nullptr;
+    if (s_Session) {
+        s_Interpreter->releaseSession(s_Session);
+        s_Session = nullptr;
+    }
 
-    MNN::Interpreter::destroy(s_Interpreter);
-    s_Interpreter = nullptr;
+    if (s_Interpreter) {
+        MNN::Interpreter::destroy(s_Interpreter);
+        s_Interpreter = nullptr;
+    }
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring modelPath) {
+Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring modelPath, jint backends, jint numThread) {
     const char *modelPathCStr = env->GetStringUTFChars(modelPath, JNI_FALSE);
 
     // 加载模型文件（路径为Android设备上的绝对路径）
@@ -113,8 +117,8 @@ Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring 
 
     // 配置会话
     MNN::ScheduleConfig config;
-    config.type = MNN_FORWARD_VULKAN;  // 选择合适的后端
-    config.numThread = 4;              // 线程数
+    config.type = (MNNForwardType) backends;
+    config.numThread = numThread;
     s_Session = s_Interpreter->createSession(config);
     return s_Session != nullptr ? JNI_TRUE : JNI_FALSE;
 }
@@ -170,13 +174,5 @@ Java_com_ailink_mnn_AiLinkMnnLib_runSession(JNIEnv *env, jclass clazz, jfloatArr
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_ailink_mnn_AiLinkMnnLib_releaseSession(JNIEnv *env, jclass clazz) {
-    if (s_Session) {
-        s_Interpreter->releaseSession(s_Session);
-        s_Session = nullptr;
-    }
-
-    if (s_Interpreter) {
-        MNN::Interpreter::destroy(s_Interpreter);
-        s_Interpreter = nullptr;
-    }
+    releaseSession();
 }
