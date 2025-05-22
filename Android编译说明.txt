@@ -1,0 +1,86 @@
+# Yolo模型转换:
+1.导出 ONNX：使用 Ultralytics 提供的 export.py 或手动调用 torch.onnx.export。
+2.转换为 MNN：调用 MNNConvert -f ONNX 而非 -f TORCH。
+3.校验与优化：使用 MNN 提供的 Python 脚本 testMNNFromOnnx.py 或在部署端测试推理结果。
+
+# 模型转换
+yolo export \
+  model=yolov5su.pt \
+  format=onnx \
+  imgsz=320 \
+  batch=1 \
+  dynamic=False \
+  simplify=False
+  
+mnnconvert -f ONNX --modelFile yolov5su.onnx --MNNModel yolov5su.mnn --bizCode MNN
+mnnconvert -f TFLITE --modelFile best-fp16_v32.tflite --MNNModel best-fp16_v32.mnn --bizCode MNN
+
+# 想了解MNN模型的具体结构，输入输出信息时，可以将模型转换为Json文件，并查找相关信息获取。
+mnnconvert -f MNN --modelFile yolov5su.mnn --JsonFile yolov5su.json
+mnnconvert -f MNN --modelFile best-fp16_v32.mnn --JsonFile best-fp16_v32.json
+
+
+# MMN编译
+git clone https://github.com/alibaba/MNN.git
+
+# Andoird SDK 路径, 下载 cmdline-tools 后放到 $HOME/Android/Sdk 下
+export ANDROID_HOME=$HOME/Android/Sdk
+export ANDROID_SDK_ROOT=$ANDROID_HOME
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+
+# 快速接受许可
+yes | "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" --licenses --sdk_root=$ANDROID_HOME
+
+
+# MNN 项目建议的 NDK 版本是 21
+export ANDROID_NDK=/mnt/d/XM/LLM/run-with-npu/android-ndk-r21e
+
+cd project/android
+rm -rf build_64 && mkdir build_64
+cd build_64
+
+
+
+
+构建选项
+-DMNN_BUILD_SHARED_LIBS=ON/OFF: 构建共享库或静态库
+-DMNN_OPENMP=ON/OFF: 使用OpenMP线程池实现
+-DMNN_USE_THREAD_POOL=ON/OFF: 使用MNN自己的线程池实现
+-DMNN_BUILD_TRAIN=ON/OFF: 构建MNN的训练框架
+-DMNN_BUILD_DEMO=ON/OFF: 构建演示程序
+-DMNN_BUILD_CONVERTER=ON/OFF: 构建MNN模型转换器
+-DMNN_BUILD_QUANTOOLS=ON/OFF: 构建量化工具
+-DMNN_BUILD_MINI=ON/OFF: 构建MNN-MINI（仅支持固定形状模型）
+后端选项
+-DMNN_METAL=ON/OFF: 启用Metal后端
+-DMNN_OPENCL=ON/OFF: 启用OpenCL后端
+-DMNN_OPENGL=ON/OFF: 启用OpenGL后端
+-DMNN_VULKAN=ON/OFF: 启用Vulkan后端
+-DMNN_ARM82=ON/OFF: 启用ARMv8.2的FP16计算
+-DMNN_CUDA=ON/OFF: 启用CUDA后端
+-DMNN_TENSORRT=ON/OFF: 启用TensorRT
+-DMNN_COREML=ON/OFF: 启用CoreML
+-DMNN_NNAPI=ON/OFF: 启用NNAPI
+其他功能选项
+-DMNN_SUPPORT_BF16=ON/OFF: 启用BF16操作支持
+-DMNN_SUPPORT_RENDER=ON/OFF: 启用渲染操作
+-DMNN_BUILD_OPENCV=ON/OFF: 构建基于MNN的OpenCV API
+-DMNN_BUILD_LLM=ON/OFF: 构建基于MNN的LLM库
+-DMNN_BUILD_DIFFUSION=ON/OFF: 构建基于MNN的扩散模型演示
+
+# 可以修改 build_64.sh 中的 "make -j4" 来修改并发数
+../build_64.sh "-DMNN_OPENGL=ON -DMNN_VULKAN=ON -DMNN_NNAPI=ON -DMNN_SUPPORT_BF16=ON -DMNN_LOW_MEMORY=true -DMNN_CPU_WEIGHT_DEQUANT_GEMM=true -DMNN_BUILD_LLM=true -DMNN_SUPPORT_TRANSFORMER_FUSE=true -DMNN_ARM82=true -DMNN_USE_LOGCAT=true -DMNN_OPENCL=true -DLLM_SUPPORT_VISION=true -DMNN_BUILD_OPENCV=true -DMNN_IMGCODECS=true -DLLM_SUPPORT_AUDIO=true -DMNN_BUILD_AUDIO=true -DMNN_BUILD_DIFFUSION=ON -DMNN_SEP_BUILD=OFF -DCMAKE_INSTALL_PREFIX=."
+make install
+
+# 构建运行
+cd ../../../apps/Android/MnnLlmChat
+./gradlew installDebug
+
+# Demo 中的 NDK 用的是不同版本
+export ANDROID_NDK=$ANDROID_HOME/ndk/25.1.8937393
+
+# 安装 APK
+cd ../../../apps/Android/MnnLlmChat
+./gradlew installDebug
