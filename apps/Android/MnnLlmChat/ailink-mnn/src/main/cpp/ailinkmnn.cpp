@@ -120,6 +120,14 @@ Java_com_ailink_mnn_AiLinkMnnLib_initSession(JNIEnv *env, jclass clazz, jstring 
     config.type = (MNNForwardType) forwardType;
     config.backupType = MNN_FORWARD_CPU; // 主后端不支持时，降级到 CPU
     config.numThread = numThread;
+
+    // 后端设置
+    MNN::BackendConfig backendConfig;
+//    backendConfig.memory = MNN::BackendConfig::Memory_High;
+//    backendConfig.power = MNN::BackendConfig::Power_High;
+    backendConfig.precision = MNN::BackendConfig::Precision_High;
+    config.backendConfig = &backendConfig;
+
     s_Session = s_Interpreter->createSession(config);
 
     __android_log_print(ANDROID_LOG_DEBUG, "AiLink", "initSession: path=%s, forwardType=%d, numThread=%d",

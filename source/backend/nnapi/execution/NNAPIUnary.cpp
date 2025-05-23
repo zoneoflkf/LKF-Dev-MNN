@@ -54,6 +54,17 @@ ErrorCode NNAPIUnary::onResize(const std::vector<Tensor *> &inputs, const std::v
         {UnaryOpOperation_SILU, -1}
     };
     auto opType = mOp->main_as_UnaryOp()->opType();
+    
+    if (opType == UnaryOpOperation_SQUARE) {
+        // 使用 ANEURALNETWORKS_MUL 实现平方操作，避免 POW 的精度问题
+        auto inputIdxs = getTensorIdxs(inputs);
+        // 添加相同的输入张量作为第二个操作数
+        inputIdxs.push_back(inputIdxs[0]); // 复用第一个输入
+        // 添加 FUSED_NONE 激活函数参数
+        inputIdxs.push_back(buildScalar(ANEURALNETWORKS_FUSED_NONE));
+        return buildOperation(ANEURALNETWORKS_MUL, inputIdxs, getTensorIdxs(outputs));
+    }
+    
     auto iter = unary_map.find(opType);
     if (iter == unary_map.end() || iter->second < 0) {
         MNN_ERROR("NNAPI Unary not support %s\n", MNN::EnumNameUnaryOpOperation(opType));
